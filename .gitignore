@@ -11,12 +11,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -25,6 +19,14 @@ wheels/
 venv/
 .venv/
 ENV/
+
+# Node & Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # IDE & OS
 .idea/
@@ -36,10 +38,11 @@ Thumbs.db
 
 # Environment Variables
 .env
-.env.local
+.env*.local
 
-# Local Data Cache (Optional: keeps repo clean)
+# Local Data Cache
 data/*.db
 data/lakehouse_raw/*.json
 !data/.gitkeep
 !data/lakehouse_raw/.gitkeep
+

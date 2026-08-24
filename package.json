@@ -1,0 +1,30 @@
+{
+  "name": "crypto-intelligence-platform",
+  "version": "1.0.0",
+  "description": "[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/) [![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8+-017CEE?logo=apache-airflow&logoColor=white)](https://airflow.apache.org/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/) [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/) [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/satetapongsa/DATA_CRYPTO_PULSE.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/satetapongsa/DATA_CRYPTO_PULSE/issues"
+  },
+  "homepage": "https://github.com/satetapongsa/DATA_CRYPTO_PULSE#readme",
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "lucide-react": "^1.34.0",
+    "next": "^16.3.2",
+    "react": "^19.2.8",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.2.8"
+  }
+}

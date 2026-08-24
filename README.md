@@ -2,11 +2,13 @@
 ### *End-to-End Data Engineering & Algorithmic Intelligence Platform*
 
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15+-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8+-017CEE?logo=apache-airflow&logoColor=white)](https://airflow.apache.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsatetapongsa%2FDATA_CRYPTO_PULSE)
 
 ---
 
@@ -14,12 +16,12 @@
 
 **Crypto Pulse** คือโปรเจคระบบ Data Engineering และ Data Analytics แบบ End-to-End ที่ออกแบบมาเพื่อดึงข้อมูลราคา Cryptocurrency (OHLCV) และข่าวสารความเคลื่อนไหวในตลาดแบบ Real-time นำมาผ่านกระบวนการ **ETL (Extract - Transform - Load)** คำนวณ Feature Engineering ทางเทคนิค (SMA, EMA, RSI, MACD) และวิเคราะห์ NLP Sentiment เพื่อสร้างสัญญาณเทรดเชิงปริมาณ (**Quantitative Trading Signals**)
 
-### 💡 จุดเด่นด้านวิศวกรรมข้อมูล (Data Engineering Highlights):
+### 💡 จุดเด่นด้านวิศวกรรมข้อมูล & Full-Stack (Key Highlights):
 1. **Dual Storage Lakehouse Architecture:** จัดเก็บข้อมูลดิบ (Raw JSON/BSON) ลงใน **MongoDB** เพื่อรองรับ Schema Evolution และ Data Lineage ขณะที่ข้อมูลที่ผ่านการ Transform แล้วจะถูกจัดเก็บลงใน **PostgreSQL Data Warehouse** ด้วยโมเดล **Star Schema** (Fact & Dimension Tables)
 2. **Orchestration with Apache Airflow:** ควบคุมลำดับการทำงานของ Data Pipeline ด้วย **Airflow DAG** จัดการ Task Dependencies, Health checks, Retry logic, และ Data validation
 3. **Quantitative Signal Confluence Engine:** อัลกอริทึมวิเคราะห์สัญญาณเทรดแบบ Confluence (วิเคราะห์จุดตัดเส้นค่าเฉลี่ย Golden/Death Cross, ระดับ RSI Extremes, ร่วมกับคะแนน NLP Sentiment ของข่าว) ให้ผลลัพธ์เป็น `STRONG_BUY`, `BUY`, `HOLD`, `SELL`, `STRONG_SELL` พร้อมค่า Confidence Score (0–100%)
-4. **REST API & Interactive Cyberpunk Dashboard:** พัฒนา Backend ด้วย **FastAPI** เพื่อส่งมอบข้อมูลผ่าน REST APIs และสร้างหน้าเว็บ Dashboard แบบ Dark Glassmorphism 4 โซน (Live Tickers, Interactive Charts, Airflow DAG Monitor, Lakehouse Table/JSON Explorer)
-5. **Dual-Mode Execution:** รองรับการรันแบบ **Docker Compose** สำหรับ Production และ **Zero-Dependency Local Mode** (รันด้วย Python 1 คำสั่งผ่าน Embedded SQLite Warehouse + JSON Lakehouse)
+4. **Next.js & React 19 Full-Stack Dashboard (Vercel Ready):** พัฒนาหน้าเว็บ Dashboard ด้วย **Next.js / React 19 / Chart.js** รองรับการ Deploy ขึ้น **Vercel** ได้ทันทีแบบ 1-Click พร้อม Serverless API Endpoints และมี Python FastAPI Backend + Docker Compose รองรับแบบครบวงจร
+5. **Diagrams as Code (Mermaid.js):** ออกแบบสถาปัตยกรรมระบบและ Data Warehouse Star Schema ERD ด้วยโค้ด **Mermaid.js** ซึ่งแสดงผลเป็นแผนภาพเวกเตอร์แบบ Interactive บน GitHub ทันที!
 
 ---
 
