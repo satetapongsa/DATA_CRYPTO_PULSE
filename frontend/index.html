@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Intelligence Platform | Data Engineering & Analytics</title>
+    <meta name="description" content="End-to-End Crypto Market Trends and Algorithmic Trading Signal Intelligence Platform powered by Python ETL, Airflow DAG, PostgreSQL Star Schema, and MongoDB Lakehouse.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js and Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="dark-theme">
+    <div class="app-layout">
+        <!-- Top Navigation Header -->
+        <header class="top-header glass-panel">
+            <div class="header-left">
+                <div class="brand-badge">
+                    <div class="brand-glow-dot"></div>
+                    <i data-lucide="activity" class="brand-icon"></i>
+                </div>
+                <div>
+                    <h1 class="brand-title">CRYPTO<span class="gradient-text">PULSE</span> <span class="badge-de">DE PLATFORM</span></h1>
+                    <p class="brand-subtitle">Data Lakehouse • Star Schema Warehouse • Airflow Orchestration • Signal Engine</p>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="pipeline-pulse-badge" id="header-pipeline-badge">
+                    <span class="pulse-ring"></span>
+                    <span class="pulse-core"></span>
+                    <span id="header-pipeline-status-text">Pipeline Idle</span>
+                </div>
+                <button id="btn-trigger-pipeline" class="btn-primary glow-btn" onclick="triggerPipelineRun()">
+                    <i data-lucide="play" class="btn-icon"></i>
+                    <span>Trigger DAG Run</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-container">
+            
+            <!-- ZONE 1: Metrics Overview & Live Ticker Feed -->
+            <section class="zone-section" id="zone-metrics">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <i data-lucide="trending-up" class="section-icon text-cyan"></i>
+                        <h2>ZONE 1: Real-Time Market Overview & Asset Health</h2>
+                    </div>
+                    <div class="refresh-indicator">
+                        <span class="text-muted">Auto-refresh: 10s</span>
+                    </div>
+                </div>
+
+                <!-- Ticker Cards Grid -->
+                <div class="ticker-grid" id="ticker-cards-container">
+                    <!-- Populated dynamically via JS -->
+                    <div class="loading-placeholder">Loading live cryptocurrency market prices...</div>
+                </div>
+
+                <!-- Market Mood & Pipeline Health Sub-Bar -->
+                <div class="market-sub-bar glass-card">
+                    <div class="mood-widget">
+                        <div class="widget-label"><i data-lucide="gauge" class="icon-sm"></i> Market Sentiment Index</div>
+                        <div class="mood-content">
+                            <div class="mood-score" id="mood-score-val">--</div>
+                            <div class="mood-badge" id="mood-badge-label">NEUTRAL</div>
+                            <div class="mood-bar-container">
+                                <div class="mood-bar-fill" id="mood-bar-fill" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="quick-stat">
+                        <div class="widget-label"><i data-lucide="database" class="icon-sm"></i> Star Schema Rows</div>
+                        <div class="quick-stat-val text-cyan" id="total-warehouse-rows">--</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="quick-stat">
+                        <div class="widget-label"><i data-lucide="file-json" class="icon-sm"></i> Raw Lakehouse Payloads</div>
+                        <div class="quick-stat-val text-purple" id="total-lakehouse-docs">--</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="quick-stat">
+                        <div class="widget-label"><i data-lucide="zap" class="icon-sm"></i> Active Signal Confluence</div>
+                        <div class="quick-stat-val text-emerald" id="active-signals-count">--</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ZONE 2: Analytics Dashboard (Price Charts & Signal Intelligence) -->
+            <section class="zone-section" id="zone-analytics">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <i data-lucide="bar-chart-2" class="section-icon text-purple"></i>
+                        <h2>ZONE 2: Technical Feature Engineering & Quantitative Signals</h2>
+                    </div>
+                    <!-- Symbol Switcher Tabs -->
+                    <div class="symbol-tabs" id="symbol-tabs-container">
+                        <button class="tab-btn active" data-symbol="BTC" onclick="selectCryptoSymbol('BTC')">BTC</button>
+                        <button class="tab-btn" data-symbol="ETH" onclick="selectCryptoSymbol('ETH')">ETH</button>
+                        <button class="tab-btn" data-symbol="SOL" onclick="selectCryptoSymbol('SOL')">SOL</button>
+                        <button class="tab-btn" data-symbol="BNB" onclick="selectCryptoSymbol('BNB')">BNB</button>
+                        <button class="tab-btn" data-symbol="ADA" onclick="selectCryptoSymbol('ADA')">ADA</button>
+                        <button class="tab-btn" data-symbol="XRP" onclick="selectCryptoSymbol('XRP')">XRP</button>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <!-- Main Chart Panel -->
+                    <div class="chart-panel glass-card">
+                        <div class="chart-header">
+                            <div class="chart-title-area">
+                                <h3 id="chart-asset-title">Bitcoin (BTC/USDT) Price & Indicator Trends</h3>
+                                <span class="chart-subtitle">Engineered Features: SMA-7, SMA-25, EMA-12, EMA-26, RSI-14</span>
+                            </div>
+                            <div class="chart-controls">
+                                <label class="toggle-control">
+                                    <input type="checkbox" id="toggle-sma7" checked onchange="toggleChartDataset('SMA-7')">
+                                    <span class="toggle-label text-cyan">SMA 7</span>
+                                </label>
+                                <label class="toggle-control">
+                                    <input type="checkbox" id="toggle-sma25" checked onchange="toggleChartDataset('SMA-25')">
+                                    <span class="toggle-label text-purple">SMA 25</span>
+                                </label>
+                                <label class="toggle-control">
+                                    <input type="checkbox" id="toggle-rsi" checked onchange="toggleRsiChart()">
+                                    <span class="toggle-label text-amber">RSI 14</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="priceTrendsChart"></canvas>
+                        </div>
+                        <div class="rsi-chart-wrapper" id="rsi-container">
+                            <div class="rsi-label">RSI (14) Relative Strength Index</div>
+                            <canvas id="rsiChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Signals Breakdown & Live Feed -->
+                    <div class="signals-panel glass-card">
+                        <div class="panel-inner-header">
+                            <h3><i data-lucide="radio" class="icon-sm text-emerald"></i> Algorithmic Trading Signals</h3>
+                            <span class="badge-neutral" id="signals-count-badge">Live Feed</span>
+                        </div>
+
+                        <!-- Donut Chart -->
+                        <div class="donut-chart-container">
+                            <canvas id="signalDistributionChart"></canvas>
+                        </div>
+
+                        <!-- Recent Signals Feed List -->
+                        <div class="signals-list-wrap" id="signals-feed-container">
+                            <!-- Populated dynamically via JS -->
+                            <div class="loading-placeholder">Loading calculated trading signals...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ZONE 3: Pipeline Orchestration & Airflow DAG Monitor -->
+            <section class="zone-section" id="zone-pipeline">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <i data-lucide="git-branch" class="section-icon text-amber"></i>
+                        <h2>ZONE 3: Apache Airflow DAG Orchestration & Execution Monitor</h2>
+                    </div>
+                    <div class="dag-meta-info">
+                        <span class="code-tag">DAG: crypto_market_intelligence_pipeline</span>
+                        <span class="code-tag">Interval: @hourly</span>
+                    </div>
+                </div>
+
+                <div class="dag-monitor-card glass-card">
+                    <!-- Flowchart Nodes Graph -->
+                    <div class="dag-graph-flow" id="dag-graph-flow">
+                        <!-- Node 1 -->
+                        <div class="dag-node" id="node-wait_for_source" data-task="wait_for_source">
+                            <div class="node-badge-idx">1</div>
+                            <div class="node-icon-box"><i data-lucide="wifi"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">wait_for_source</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                        <div class="dag-arrow"><i data-lucide="arrow-right"></i></div>
+
+                        <!-- Node 2 -->
+                        <div class="dag-node" id="node-extract_data" data-task="extract_data">
+                            <div class="node-badge-idx">2</div>
+                            <div class="node-icon-box"><i data-lucide="download-cloud"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">extract_data</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                        <div class="dag-arrow"><i data-lucide="arrow-right"></i></div>
+
+                        <!-- Node 3 -->
+                        <div class="dag-node" id="node-process_data_mongodb" data-task="process_data_mongodb">
+                            <div class="node-badge-idx">3</div>
+                            <div class="node-icon-box"><i data-lucide="file-json"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">process_mongodb</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                        <div class="dag-arrow"><i data-lucide="arrow-right"></i></div>
+
+                        <!-- Node 4 -->
+                        <div class="dag-node" id="node-clean_transform_data" data-task="clean_transform_data">
+                            <div class="node-badge-idx">4</div>
+                            <div class="node-icon-box"><i data-lucide="cpu"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">clean_transform</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                        <div class="dag-arrow"><i data-lucide="arrow-right"></i></div>
+
+                        <!-- Node 5 -->
+                        <div class="dag-node" id="node-load_to_postgres" data-task="load_to_postgres">
+                            <div class="node-badge-idx">5</div>
+                            <div class="node-icon-box"><i data-lucide="database"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">load_to_postgres</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                        <div class="dag-arrow"><i data-lucide="arrow-right"></i></div>
+
+                        <!-- Node 6 -->
+                        <div class="dag-node" id="node-generate_signals" data-task="generate_signals">
+                            <div class="node-badge-idx">6</div>
+                            <div class="node-icon-box"><i data-lucide="sparkles"></i></div>
+                            <div class="node-info">
+                                <div class="node-title">generate_signals</div>
+                                <div class="node-status status-queued">QUEUED</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Terminal Output Console -->
+                    <div class="dag-console-wrapper">
+                        <div class="console-header">
+                            <div class="console-title">
+                                <i data-lucide="terminal" class="icon-sm"></i>
+                                <span>Execution Logs & Audit Stream</span>
+                            </div>
+                            <div class="console-controls">
+                                <span class="badge-live-pulse" id="console-live-tag">LIVE STREAM</span>
+                            </div>
+                        </div>
+                        <div class="console-body" id="pipeline-logs-console">
+                            <div class="log-line text-muted">[System] Ready. Click 'Trigger DAG Run' to initiate full ingestion sequence.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ZONE 4: Lakehouse Explorer (Postgres SQL Star Schema vs MongoDB Raw Documents) -->
+            <section class="zone-section" id="zone-lakehouse">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <i data-lucide="layers" class="section-icon text-emerald"></i>
+                        <h2>ZONE 4: Data Lakehouse & Star Schema Explorer</h2>
+                    </div>
+                    <div class="explorer-mode-switch">
+                        <button class="mode-btn active" id="btn-mode-sql" onclick="switchLakehouseMode('sql')">
+                            <i data-lucide="table" class="icon-sm"></i>
+                            <span>PostgreSQL Star Schema</span>
+                        </button>
+                        <button class="mode-btn" id="btn-mode-nosql" onclick="switchLakehouseMode('nosql')">
+                            <i data-lucide="file-code" class="icon-sm"></i>
+                            <span>MongoDB Raw Lakehouse (NoSQL)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lakehouse-container glass-card">
+                    <!-- Entity Selector Sidebar -->
+                    <div class="lakehouse-sidebar">
+                        <div class="sidebar-header" id="lakehouse-sidebar-title">SQL Tables & Views</div>
+                        <ul class="entity-list" id="lakehouse-entities-list">
+                            <!-- Populated dynamically via JS -->
+                        </ul>
+                    </div>
+
+                    <!-- Data Display Area -->
+                    <div class="lakehouse-content-area">
+                        <div class="content-header">
+                            <div class="active-entity-info">
+                                <h3 id="current-entity-name">dim_cryptos</h3>
+                                <span class="entity-badge" id="current-entity-badge">DIMENSION TABLE</span>
+                            </div>
+                            <div class="content-actions">
+                                <span class="row-count-tag" id="current-entity-rows">Rows: --</span>
+                            </div>
+                        </div>
+
+                        <!-- Table View (for SQL) -->
+                        <div class="table-responsive" id="sql-table-container">
+                            <table class="custom-table" id="lakehouse-table">
+                                <thead id="lakehouse-table-head"></thead>
+                                <tbody id="lakehouse-table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Raw JSON Document Tree View (for MongoDB) -->
+                        <div class="json-viewer-container" id="nosql-json-container" style="display: none;">
+                            <div class="json-viewer-bar">
+                                <span>Format: BSON / JSON (Raw Payload Stream)</span>
+                                <button class="btn-copy" onclick="copyJsonPayload()"><i data-lucide="copy" class="icon-sm"></i> Copy JSON</button>
+                            </div>
+                            <pre class="json-code-box"><code id="lakehouse-json-code">Loading raw documents...</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <div>
+                    <strong>Crypto-Market Trends & Trading Signal Intelligence Platform</strong>
+                    <p class="text-muted">Data Engineering Portfolio Project • Python ETL • Airflow DAG • PostgreSQL Star Schema • MongoDB NoSQL • FastAPI • Chart.js</p>
+                </div>
+                <div class="footer-links">
+                    <a href="/docs" target="_blank" class="footer-link"><i data-lucide="book-open" class="icon-sm"></i> FastAPI Swagger Docs</a>
+                    <a href="/health" target="_blank" class="footer-link"><i data-lucide="heart-pulse" class="icon-sm"></i> Health Check</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

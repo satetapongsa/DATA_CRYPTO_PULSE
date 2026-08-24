@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 1. PostgreSQL 16 - Relational Data Warehouse (Star Schema)
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: crypto_postgres_warehouse
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crypto_warehouse}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres/01_init_schema.sql:/docker-entrypoint-initdb.d/01_init_schema.sql:ro
+      - ./database/postgres/02_seed_data.sql:/docker-entrypoint-initdb.d/02_seed_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-crypto_warehouse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 2. MongoDB 7.0 - Raw JSON Document Lakehouse Store
+  # ============================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: crypto_mongo_lakehouse
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-crypto_lakehouse}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo_secure_pass}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongodb/01_init_mongo.js:/docker-entrypoint-initdb.d/01_init_mongo.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 3. Apache Airflow - Metadata Database
+  # ============================================================================
+  airflow_postgres:
+    image: postgres:16-alpine
+    container_name: airflow_postgres_db
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_secure_pass
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 4. Apache Airflow - Init DB & Create Admin User
+  # ============================================================================
+  airflow_init:
+    image: apache/airflow:2.8.2-python3.11
+    container_name: airflow_init
+    depends_on:
+      airflow_postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_secure_pass@airflow_postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_WWW_USER_USERNAME:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_WWW_USER_PASSWORD:-admin}
+    command: version
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 5. Apache Airflow - Webserver UI (Port 8080)
+  # ============================================================================
+  airflow_webserver:
+    image: apache/airflow:2.8.2-python3.11
+    container_name: airflow_webserver
+    restart: always
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_secure_pass@airflow_postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: crypto_warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_pass
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./pipeline:/opt/airflow/pipeline
+      - ./requirements.txt:/requirements.txt
+    ports:
+      - "8080:8080"
+    command: webserver
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 6. Apache Airflow - Scheduler Engine
+  # ============================================================================
+  airflow_scheduler:
+    image: apache/airflow:2.8.2-python3.11
+    container_name: airflow_scheduler
+    restart: always
+    depends_on:
+      airflow_init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_secure_pass@airflow_postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: crypto_warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_pass
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./pipeline:/opt/airflow/pipeline
+    command: scheduler
+    networks:
+      - crypto_network
+
+  # ============================================================================
+  # 7. FastAPI Backend & Web Dashboard (Port 8000)
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: crypto_intelligence_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: crypto_warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_pass
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: crypto_lakehouse
+      DATA_STORAGE_MODE: postgres_mongo
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - crypto_network
+
+volumes:
+  postgres_data:
+  mongo_data:
+  airflow_db_data:
+
+networks:
+  crypto_network:
+    driver: bridge
