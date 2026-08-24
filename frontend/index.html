@@ -61,6 +61,36 @@
                     </div>
                 </div>
 
+                <!-- Live Ingestion Stream Status Pill -->
+                <div class="ingestion-stage-banner glass-card" id="ingestion-stage-banner">
+                    <div class="stage-step" id="stage-source">
+                        <div class="stage-dot status-red"></div>
+                        <div class="stage-info">
+                            <span class="stage-title">1. Public API Stream</span>
+                            <span class="stage-sub" id="stage-source-text">Standby</span>
+                        </div>
+                    </div>
+                    <div class="stage-connector" id="conn-1"></div>
+                    <div class="stage-step" id="stage-lakehouse">
+                        <div class="stage-dot status-yellow"></div>
+                        <div class="stage-info">
+                            <span class="stage-title">2. MongoDB Raw Ingestion</span>
+                            <span class="stage-sub" id="stage-lakehouse-text">Awaiting Ingest</span>
+                        </div>
+                    </div>
+                    <div class="stage-connector" id="conn-2"></div>
+                    <div class="stage-step" id="stage-warehouse">
+                        <div class="stage-dot status-green"></div>
+                        <div class="stage-info">
+                            <span class="stage-title">3. PostgreSQL Star Schema</span>
+                            <span class="stage-sub" id="stage-warehouse-text">Synchronized</span>
+                        </div>
+                    </div>
+                    <div class="stage-badge-wrap">
+                        <span class="stage-live-badge" id="live-stage-badge">🔴 INGESTION IDLE</span>
+                    </div>
+                </div>
+
                 <!-- Ticker Cards Grid -->
                 <div class="ticker-grid" id="ticker-cards-container">
                     <!-- Populated dynamically via JS -->
@@ -182,6 +212,17 @@
                 </div>
 
                 <div class="dag-monitor-card glass-card">
+                    <!-- Dynamic Multi-Color Pipeline Progress Bar (Red -> Yellow -> Green) -->
+                    <div class="dag-progress-container">
+                        <div class="dag-progress-header">
+                            <span class="progress-title"><i data-lucide="activity" class="icon-sm"></i> Pipeline Flow Lifecycle</span>
+                            <span class="progress-percentage text-emerald" id="dag-progress-pct">100% Synchronized</span>
+                        </div>
+                        <div class="dag-progress-track">
+                            <div class="dag-progress-bar" id="dag-progress-bar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
                     <!-- Flowchart Nodes Graph -->
                     <div class="dag-graph-flow" id="dag-graph-flow">
                         <!-- Node 1 -->

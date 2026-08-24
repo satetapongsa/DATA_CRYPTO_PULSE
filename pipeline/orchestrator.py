@@ -111,9 +111,10 @@ class PipelineOrchestrator:
             # -------------------------------------------------------------
             self._start_task("wait_for_source")
             self.log("Task 1/6: Checking connectivity to Binance & Crypto News APIs...")
-            time.sleep(0.6)  # visual simulation delay
+            time.sleep(0.5)
             self.log("Public API endpoints responsive. Network connectivity OK.")
             self._complete_task("wait_for_source")
+            time.sleep(0.3)
 
             # -------------------------------------------------------------
             # Task 2: extract_data
@@ -123,6 +124,7 @@ class PipelineOrchestrator:
             raw_data_batch = extract_all_crypto_data(symbols, days=days)
             self.log(f"Extracted {len(raw_data_batch['prices'])} price candles & {len(raw_data_batch['news'])} news items.")
             self._complete_task("extract_data")
+            time.sleep(0.3)
 
             # -------------------------------------------------------------
             # Task 3: process_data_mongodb
@@ -132,6 +134,7 @@ class PipelineOrchestrator:
             mongo_res = store_raw_crypto_data(raw_data_batch)
             self.log(f"Persisted Lakehouse batch: {mongo_res['batch_id']}")
             self._complete_task("process_data_mongodb")
+            time.sleep(0.3)
 
             # -------------------------------------------------------------
             # Task 4: clean_transform_data
@@ -141,6 +144,7 @@ class PipelineOrchestrator:
             transformed_data = run_etl_transformation(raw_data_batch)
             self.log(f"Transformed {len(transformed_data['prices_df'])} price records with Star Schema date keys.")
             self._complete_task("clean_transform_data")
+            time.sleep(0.3)
 
             # -------------------------------------------------------------
             # Task 5: load_to_postgres
@@ -154,13 +158,14 @@ class PipelineOrchestrator:
             load_res = load_transformed_data_to_warehouse(transformed_data, signals_df)
             self.log(f"Warehouse load complete. Loaded {load_res['prices_loaded']} prices, {load_res['signals_loaded']} signals.")
             self._complete_task("load_to_postgres")
+            time.sleep(0.3)
 
             # -------------------------------------------------------------
             # Task 6: generate_signals
             # -------------------------------------------------------------
             self._start_task("generate_signals")
             self.log("Task 6/6: Verifying signal consistency and updating analytics views...")
-            time.sleep(0.4)
+            time.sleep(0.5)
             self.log("Trading intelligence published to analytical data marts successfully.")
             self._complete_task("generate_signals")
 

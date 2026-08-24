@@ -417,31 +417,146 @@ async function fetchPipelineStatus() {
         const res = await fetch('/api/v1/pipeline/status');
         const status = await res.json();
 
-        // Update Top Header Pulse Badge
+        // 1. Update Top Header Pulse Badge (Red -> Yellow -> Green)
+        const headerBadge = document.getElementById('header-pipeline-badge');
         const headerBadgeText = document.getElementById('header-pipeline-status-text');
         const triggerBtn = document.getElementById('btn-trigger-pipeline');
 
+        // Zone 1 Ingestion Stage Elements
+        const stageSource = document.getElementById('stage-source');
+        const stageLakehouse = document.getElementById('stage-lakehouse');
+        const stageWarehouse = document.getElementById('stage-warehouse');
+        const stageSourceText = document.getElementById('stage-source-text');
+        const stageLakeText = document.getElementById('stage-lakehouse-text');
+        const stageWareText = document.getElementById('stage-warehouse-text');
+        const liveBadge = document.getElementById('live-stage-badge');
+
+        // Zone 3 Progress Bar Elements
+        const progressBar = document.getElementById('dag-progress-bar');
+        const progressPct = document.getElementById('dag-progress-pct');
+
         if (status.is_running) {
-            headerBadgeText.textContent = `Running Task: ${status.current_task || '...'}`;
+            // =========================================================
+            // 🟡 RUNNING / EXTRACTING STATE (Yellow / Amber Pulse)
+            // =========================================================
+            headerBadge.className = 'pipeline-pulse-badge state-running';
+            headerBadgeText.textContent = `Ingesting: ${status.current_task || '...'}`;
             triggerBtn.disabled = true;
             triggerBtn.style.opacity = '0.6';
-        } else {
-            headerBadgeText.textContent = `Pipeline: ${status.overall_status}`;
+
+            // Zone 1 Banner
+            if (stageSource) stageSource.querySelector('.stage-dot').className = 'stage-dot status-yellow';
+            if (stageLakehouse) stageLakehouse.querySelector('.stage-dot').className = 'stage-dot status-yellow';
+            if (stageWarehouse) stageWarehouse.querySelector('.stage-dot').className = 'stage-dot status-yellow';
+            if (stageSourceText) stageSourceText.textContent = 'Extracting Public API...';
+            if (stageLakeText) stageLakeText.textContent = 'Ingesting Raw Payloads...';
+            if (stageWareText) stageWareText.textContent = 'Transforming & Loading...';
+            if (liveBadge) {
+                liveBadge.textContent = '🟡 INGESTION ACTIVE';
+                liveBadge.className = 'stage-live-badge badge-yellow';
+            }
+
+            // Calculate progress percentage
+            const completedCount = status.tasks.filter(t => t.status === 'SUCCESS').length;
+            const pct = Math.max(15, Math.round(((completedCount + 0.5) / status.tasks.length) * 100));
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressPct) {
+                progressPct.textContent = `${pct}% Ingestion in Progress`;
+                progressPct.className = 'progress-percentage text-amber';
+            }
+
+        } else if (status.overall_status === 'SUCCESS') {
+            // =========================================================
+            // 🟢 SUCCESS STATE (Neon Emerald Green)
+            // =========================================================
+            headerBadge.className = 'pipeline-pulse-badge state-success';
+            headerBadgeText.textContent = `Pipeline: Synchronized (100%)`;
             triggerBtn.disabled = false;
             triggerBtn.style.opacity = '1';
+
+            // Zone 1 Banner
+            if (stageSource) stageSource.querySelector('.stage-dot').className = 'stage-dot status-green';
+            if (stageLakehouse) stageLakehouse.querySelector('.stage-dot').className = 'stage-dot status-green';
+            if (stageWarehouse) stageWarehouse.querySelector('.stage-dot').className = 'stage-dot status-green';
+            if (stageSourceText) stageSourceText.textContent = 'Binance & News Connected';
+            if (stageLakeText) stageLakeText.textContent = 'MongoDB Lakehouse Loaded';
+            if (stageWareText) stageWareText.textContent = 'PostgreSQL Star Schema OK';
+            if (liveBadge) {
+                liveBadge.textContent = '🟢 INGESTION SUCCESS';
+                liveBadge.className = 'stage-live-badge badge-green';
+            }
+
+            // Progress Bar (100% Green)
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressPct) {
+                progressPct.textContent = '100% Synchronized';
+                progressPct.className = 'progress-percentage text-emerald';
+            }
+
+        } else if (status.overall_status === 'FAILED') {
+            // =========================================================
+            // 🔴 FAILED STATE (Crimson Red)
+            // =========================================================
+            headerBadge.className = 'pipeline-pulse-badge state-idle';
+            headerBadgeText.textContent = `Pipeline: Failed`;
+            triggerBtn.disabled = false;
+            triggerBtn.style.opacity = '1';
+
+            if (liveBadge) {
+                liveBadge.textContent = '🔴 INGESTION FAILED';
+                liveBadge.className = 'stage-live-badge badge-red';
+            }
+            if (progressPct) {
+                progressPct.textContent = 'Pipeline Interrupted';
+                progressPct.className = 'progress-percentage text-rose';
+            }
+        } else {
+            // =========================================================
+            // 🔴 IDLE / STANDBY STATE (Red Dot)
+            // =========================================================
+            headerBadge.className = 'pipeline-pulse-badge state-idle';
+            headerBadgeText.textContent = `Pipeline: Standby`;
+            triggerBtn.disabled = false;
+            triggerBtn.style.opacity = '1';
+
+            if (stageSource) stageSource.querySelector('.stage-dot').className = 'stage-dot status-red';
+            if (stageLakehouse) stageLakehouse.querySelector('.stage-dot').className = 'stage-dot status-red';
+            if (stageWarehouse) stageWarehouse.querySelector('.stage-dot').className = 'stage-dot status-red';
+            if (liveBadge) {
+                liveBadge.textContent = '🔴 INGESTION STANDBY';
+                liveBadge.className = 'stage-live-badge badge-red';
+            }
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPct) {
+                progressPct.textContent = '0% Standby';
+                progressPct.className = 'progress-percentage text-muted';
+            }
         }
 
-        // Update DAG Flowchart Nodes
-        status.tasks.forEach(t => {
+        // 2. Update DAG Flowchart Nodes with Dynamic Glowing Colors
+        const arrows = document.querySelectorAll('.dag-arrow');
+        status.tasks.forEach((t, idx) => {
             const nodeEl = document.getElementById(`node-${t.id}`);
             if (nodeEl) {
                 const statusEl = nodeEl.querySelector('.node-status');
                 statusEl.textContent = t.status;
                 statusEl.className = `node-status status-${t.status.toLowerCase()}`;
+
+                // Apply node glowing container classes
+                nodeEl.className = `dag-node node-${t.status.toLowerCase()}`;
+
+                // Light up preceding arrows in Green if task succeeded
+                if (arrows[idx - 1]) {
+                    if (t.status === 'SUCCESS' || t.status === 'RUNNING') {
+                        arrows[idx - 1].classList.add('arrow-active');
+                    } else {
+                        arrows[idx - 1].classList.remove('arrow-active');
+                    }
+                }
             }
         });
 
-        // Update Console Logs
+        // 3. Update Console Logs
         const consoleEl = document.getElementById('pipeline-logs-console');
         if (consoleEl && status.recent_logs.length > 0) {
             consoleEl.innerHTML = status.recent_logs.map(log => `<div class="log-line">${log}</div>`).join('');
@@ -456,8 +571,17 @@ async function triggerPipelineRun() {
     try {
         const btn = document.getElementById('btn-trigger-pipeline');
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader" class="btn-icon"></i> <span>Triggering...</span>`;
+        btn.innerHTML = `<i data-lucide="loader" class="btn-icon"></i> <span>Triggering Ingestion...</span>`;
         lucide.createIcons();
+
+        // Optimistically set to Yellow running state
+        const headerBadge = document.getElementById('header-pipeline-badge');
+        if (headerBadge) headerBadge.className = 'pipeline-pulse-badge state-running';
+        const liveBadge = document.getElementById('live-stage-badge');
+        if (liveBadge) {
+            liveBadge.textContent = '🟡 INGESTION STARTING';
+            liveBadge.className = 'stage-live-badge badge-yellow';
+        }
 
         const res = await fetch('/api/v1/pipeline/trigger', { method: 'POST' });
         const data = await res.json();
@@ -468,7 +592,7 @@ async function triggerPipelineRun() {
             await fetchPipelineStatus();
             btn.innerHTML = `<i data-lucide="play" class="btn-icon"></i> <span>Trigger DAG Run</span>`;
             lucide.createIcons();
-        }, 800);
+        }, 600);
     } catch (err) {
         console.error('Error triggering pipeline:', err);
     }
