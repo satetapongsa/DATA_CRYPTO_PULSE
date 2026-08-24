@@ -38,7 +38,7 @@ export default function Dashboard() {
   const donutChartInstance = useRef(null);
   const consoleLogRef = useRef(null);
 
-  // 1. Initial Data Fetch
+  // 1. Initial Data Fetch & Polling
   useEffect(() => {
     fetchCryptos();
     fetchSummary();
@@ -48,12 +48,15 @@ export default function Dashboard() {
 
     const interval = setInterval(() => {
       fetchCryptos();
-      fetchSummary();
-      fetchSignals();
       fetchDagStatus();
-    }, 5000);
+    }, 8000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (priceChartInstance.current) priceChartInstance.current.destroy();
+      if (rsiChartInstance.current) rsiChartInstance.current.destroy();
+      if (donutChartInstance.current) donutChartInstance.current.destroy();
+    };
   }, []);
 
   // 2. Fetch Price Trends when Symbol changes
@@ -62,6 +65,19 @@ export default function Dashboard() {
       fetchPriceTrends(selectedSymbol);
     }
   }, [selectedSymbol]);
+
+  // Update SMA dataset visibility without chart recreation
+  useEffect(() => {
+    if (priceChartInstance.current) {
+      if (priceChartInstance.current.data.datasets[1]) {
+        priceChartInstance.current.data.datasets[1].hidden = !showSma7;
+      }
+      if (priceChartInstance.current.data.datasets[2]) {
+        priceChartInstance.current.data.datasets[2].hidden = !showSma25;
+      }
+      priceChartInstance.current.update('none');
+    }
+  }, [showSma7, showSma25]);
 
   // 3. Update Lakehouse data when selected entity or mode changes
   useEffect(() => {
@@ -130,9 +146,10 @@ export default function Dashboard() {
         await fetchDagStatus();
         await fetchCryptos();
         await fetchSignals();
+        await fetchSummary();
         if (selectedSymbol) fetchPriceTrends(selectedSymbol);
         setIsTriggering(false);
-      }, 1800);
+      }, 1500);
     } catch (e) {
       console.error('Error triggering DAG:', e);
       setIsTriggering(false);
@@ -185,14 +202,9 @@ export default function Dashboard() {
     }
   };
 
-  // Render Price Line & Indicators Chart
+  // High Performance In-Place Chart Update
   const renderPriceChart = (chartData) => {
-    if (!priceChartRef.current) return;
-    const ctx = priceChartRef.current.getContext('2d');
-
-    if (priceChartInstance.current) {
-      priceChartInstance.current.destroy();
-    }
+    if (!priceChartRef.current || !chartData?.data) return;
 
     const labels = chartData.data.map(d => {
       const dt = new Date(d.timestamp);
@@ -204,124 +216,140 @@ export default function Dashboard() {
     const sma25 = chartData.data.map(d => d.sma_25);
     const rsi14 = chartData.data.map(d => d.rsi_14);
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(0, 242, 254, 0.25)');
-    gradient.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
+    // In-place update if chart already exists (Zero Lag)
+    if (priceChartInstance.current) {
+      const chart = priceChartInstance.current;
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = closePrices;
+      chart.data.datasets[1].data = sma7;
+      chart.data.datasets[2].data = sma25;
+      chart.update('none');
+    } else {
+      const ctx = priceChartRef.current.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(0, 242, 254, 0.22)');
+      gradient.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
 
-    priceChartInstance.current = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Close Price ($)',
-            data: closePrices,
-            borderColor: '#00f2fe',
-            backgroundColor: gradient,
-            fill: true,
-            tension: 0.35,
-            borderWidth: 2.5,
-            pointRadius: 3,
-            yAxisID: 'y'
-          },
-          {
-            label: 'SMA-7',
-            data: sma7,
-            borderColor: '#38bdf8',
-            borderDash: [4, 4],
-            borderWidth: 1.8,
-            fill: false,
-            pointRadius: 0,
-            hidden: !showSma7,
-            tension: 0.3,
-            yAxisID: 'y'
-          },
-          {
-            label: 'SMA-25',
-            data: sma25,
-            borderColor: '#9d4edd',
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 0,
-            hidden: !showSma25,
-            tension: 0.3,
-            yAxisID: 'y'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(14, 19, 31, 0.95)',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
-            borderWidth: 1,
-            titleFont: { family: 'JetBrains Mono' },
-            bodyFont: { family: 'JetBrains Mono' }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
-          },
-          y: {
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: {
-              color: '#94a3b8',
-              font: { family: 'JetBrains Mono', size: 10 },
-              callback: val => `$${Number(val).toLocaleString()}`
-            }
-          }
-        }
-      }
-    });
-
-    // Render RSI Sub-Chart
-    if (rsiChartRef.current) {
-      const rsiCtx = rsiChartRef.current.getContext('2d');
-      if (rsiChartInstance.current) rsiChartInstance.current.destroy();
-
-      rsiChartInstance.current = new Chart(rsiCtx, {
+      priceChartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [{
-            label: 'RSI 14',
-            data: rsi14,
-            borderColor: '#f59e0b',
-            borderWidth: 2,
-            pointRadius: 0,
-            fill: false,
-            tension: 0.2
-          }]
+          datasets: [
+            {
+              label: 'Close Price ($)',
+              data: closePrices,
+              borderColor: '#00f2fe',
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2.2,
+              pointRadius: 2,
+              pointHoverRadius: 5,
+              yAxisID: 'y'
+            },
+            {
+              label: 'SMA-7',
+              data: sma7,
+              borderColor: '#38bdf8',
+              borderDash: [4, 4],
+              borderWidth: 1.6,
+              fill: false,
+              pointRadius: 0,
+              hidden: !showSma7,
+              tension: 0.3,
+              yAxisID: 'y'
+            },
+            {
+              label: 'SMA-25',
+              data: sma25,
+              borderColor: '#9d4edd',
+              borderWidth: 1.8,
+              fill: false,
+              pointRadius: 0,
+              hidden: !showSma25,
+              tension: 0.3,
+              yAxisID: 'y'
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          animation: { duration: 300 },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(14, 19, 31, 0.95)',
+              borderColor: 'rgba(255, 255, 255, 0.15)',
+              borderWidth: 1,
+              titleFont: { family: 'JetBrains Mono' },
+              bodyFont: { family: 'JetBrains Mono' }
+            }
+          },
           scales: {
-            x: { display: false },
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
+            },
             y: {
-              min: 0,
-              max: 100,
-              ticks: { stepSize: 30, color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } },
-              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 10 },
+                callback: val => `$${Number(val).toLocaleString()}`
+              }
             }
           }
         }
       });
     }
+
+    // In-place update RSI Sub-Chart
+    if (rsiChartRef.current) {
+      if (rsiChartInstance.current) {
+        const rsiChart = rsiChartInstance.current;
+        rsiChart.data.labels = labels;
+        rsiChart.data.datasets[0].data = rsi14;
+        rsiChart.update('none');
+      } else {
+        const rsiCtx = rsiChartRef.current.getContext('2d');
+        rsiChartInstance.current = new Chart(rsiCtx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'RSI 14',
+              data: rsi14,
+              borderColor: '#f59e0b',
+              borderWidth: 1.8,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { display: false },
+              y: {
+                min: 0,
+                max: 100,
+                ticks: { stepSize: 30, color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } },
+                grid: { color: 'rgba(255, 255, 255, 0.04)' }
+              }
+            }
+          }
+        });
+      }
+    }
   };
 
   const renderDonutChart = (dist) => {
     if (!donutChartRef.current) return;
-    const ctx = donutChartRef.current.getContext('2d');
-    if (donutChartInstance.current) donutChartInstance.current.destroy();
-
     const labels = Object.keys(dist);
     const data = Object.values(dist);
     if (labels.length === 0) return;
@@ -334,28 +362,38 @@ export default function Dashboard() {
       'STRONG_SELL': '#ef4444'
     };
 
-    donutChartInstance.current = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: labels.map(l => colorMap[l] || '#94a3b8'),
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 12 }
-          }
+    if (donutChartInstance.current) {
+      const dChart = donutChartInstance.current;
+      dChart.data.labels = labels;
+      dChart.data.datasets[0].data = data;
+      dChart.data.datasets[0].backgroundColor = labels.map(l => colorMap[l] || '#94a3b8');
+      dChart.update('none');
+    } else {
+      const ctx = donutChartRef.current.getContext('2d');
+      donutChartInstance.current = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: labels.map(l => colorMap[l] || '#94a3b8'),
+            borderWidth: 0
+          }]
         },
-        cutout: '70%'
-      }
-    });
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 400 },
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 10 }
+            }
+          },
+          cutout: '70%'
+        }
+      });
+    }
   };
 
   // Status Helpers
